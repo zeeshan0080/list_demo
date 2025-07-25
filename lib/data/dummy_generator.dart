@@ -17,30 +17,22 @@ class DummyData {
               DateTime.now().subtract(Duration(days: i)).millisecondsSinceEpoch,
         ),
       );
-      /*messages.add(
-        MessageModel.fake(
-          id: idGenerator.nextInt(randomMax),
-          message: "Test message $i",
-          timeStampMillis:
-          DateTime.now().subtract(Duration(days: i)).millisecondsSinceEpoch,
+    }
+    return messages;
+  }
+
+  List<ChatMessage> generateDummyMessageData({int count = 20}) {
+    final idGenerator = Random(42490823);
+    List<ChatMessage> messages = [];
+    for (int i = 0; i < count; i++) {
+      messages.add(
+        ChatMessage.fake(
+          id: idGenerator.nextInt(randomMax).toString(),
+          text: "Test message $i",
+          timeStamp:
+          DateTime.now().subtract(Duration(days: i)),
         ),
       );
-      messages.add(
-        MessageModel.fake(
-          id: idGenerator.nextInt(randomMax),
-          message: "Test message $i",
-          timeStampMillis:
-          DateTime.now().subtract(Duration(days: i)).millisecondsSinceEpoch,
-        ),
-      );
-      messages.add(
-        MessageModel.fake(
-          id: idGenerator.nextInt(randomMax),
-          message: "Test message $i",
-          timeStampMillis:
-          DateTime.now().subtract(Duration(days: i)).millisecondsSinceEpoch,
-        ),
-      );*/
     }
     return messages;
   }

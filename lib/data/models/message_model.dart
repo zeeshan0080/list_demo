@@ -21,3 +21,24 @@ class MessageModel {
     );
   }
 }
+
+class ChatMessage {
+  final String id;
+  final String text;
+  final DateTime timeStamp;
+
+  ChatMessage({required this.id, required this.text, required this.timeStamp});
+
+  factory ChatMessage.fake({
+    String id = "1",
+    String text = "Test message 1",
+    DateTime? timeStamp
+  }) {
+    return ChatMessage(
+      id: id,
+      text: text,
+      timeStamp: timeStamp ?? DateTime.now(),
+    );
+  }
+
+}

@@ -71,8 +71,9 @@ class _StickyGroupedViewState extends State<StickyGroupedView> {
                 return DateTime(date.year, date.month, date.day);
               },
               groupSeparatorBuilder: (MessageModel details) {
+                //return SizedBox.shrink();
                 return Text(
-                  DateFormat('dd-MM-yyyy').format(
+                  DateFormat('dd-MMMM-yyyy').format(
                     DateTime.fromMillisecondsSinceEpoch(
                       details.timeStampMillis,
                     ),

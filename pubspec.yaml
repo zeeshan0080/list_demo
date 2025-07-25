@@ -37,6 +37,7 @@ dependencies:
   intl:
   scrollable_positioned_list: ^0.3.8
   sticky_grouped_list: ^3.1.0
+  grouped_list: ^6.0.0
 
 dev_dependencies:
   flutter_test:

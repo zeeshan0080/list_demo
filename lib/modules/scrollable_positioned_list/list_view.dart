@@ -78,7 +78,7 @@ class _ScrollablePositionedListViewState extends State<ScrollablePositionedListV
                 Column(
                   children: <Widget>[
                     scrollControlButtons,
-                    scrollOffsetControlButtons,
+                    //scrollOffsetControlButtons,
                     const SizedBox(height: 10),
                     jumpControlButtons,
                     alignmentControl,
@@ -169,8 +169,8 @@ class _ScrollablePositionedListViewState extends State<ScrollablePositionedListV
   Widget get scrollControlButtons => Row(
     children: <Widget>[
       const Text('scroll to'),
+      scrollItemButton(0),
       scrollItemButton(1),
-      scrollItemButton(10),
       scrollItemButton(40),
       scrollItemButton(70),
       scrollItemButton(99),

@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   intl:
   scrollable_positioned_list: ^0.3.8
+  sticky_grouped_list: ^3.1.0
 
 dev_dependencies:
   flutter_test:

@@ -101,16 +101,16 @@ class _ChatMessageViewState extends State<ChatMessageView>
       _groupedMessages[dateKey]!.add(message);
     }
 
-    // Sort messages within each group by timestamp
+    // Sort messages within each group by timestamp (newest first for reversed list)
     _groupedMessages.forEach((key, messages) {
-      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      messages.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     });
 
-    // Sort date keys chronologically
+    // Sort date keys reverse chronologically (newest dates first)
     _dateKeys.sort((a, b) {
       final dateA = _parseDateKey(a);
       final dateB = _parseDateKey(b);
-      return dateA.compareTo(dateB);
+      return dateB.compareTo(dateA);
     });
   }
 
@@ -124,17 +124,11 @@ class _ChatMessageViewState extends State<ChatMessageView>
   void _handleScrollToBottomVisibility() {
     if (!_scrollController.hasClients) return;
 
-    // Check if we're near the bottom (within 100px of max scroll)
-    final isNearBottom = _scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 100;
+    // In reversed list: position 0 = latest messages, higher values = older messages
+    // Show button when user scrolls away from latest messages (position > 160)
+    final hasScrolledAwayFromLatest = _scrollController.position.pixels > 160;
 
-    // Calculate if we've scrolled away from bottom enough to show button (past ~2 messages)
-    final scrolledAwayFromBottom = _scrollController.position.pixels <
-        _scrollController.position.maxScrollExtent - 160;
-
-    // Show button when last message is not visible (scrolled away from bottom)
-    // Hide button only when we're actually near the bottom
-    final shouldShow = scrolledAwayFromBottom && !isNearBottom;
+    final shouldShow = hasScrolledAwayFromLatest;
 
     if (shouldShow != _showScrollToBottom) {
       setState(() {
@@ -185,16 +179,15 @@ class _ChatMessageViewState extends State<ChatMessageView>
   String? _getCurrentVisibleDate(double scrollOffset) {
     if (_dateKeys.isEmpty || scrollOffset <= 0) return null;
 
-    // Calculate exact positions of date groups
+    // In reversed list: calculate from top (newest dates first)
     double currentOffset = 0;
 
     for (String dateKey in _dateKeys) {
       final messagesInGroup = _groupedMessages[dateKey]!.length;
       final headerHeight = 60.0;
-      final messagesHeight = messagesInGroup * 80.0; // Approximate message height
+      final messagesHeight = messagesInGroup * 80.0;
       final groupHeight = headerHeight + messagesHeight;
 
-      // Check if scroll position is within this group
       if (scrollOffset >= currentOffset && scrollOffset < currentOffset + groupHeight) {
         return dateKey;
       }
@@ -202,7 +195,7 @@ class _ChatMessageViewState extends State<ChatMessageView>
       currentOffset += groupHeight;
     }
 
-    // If scrolled past all groups, return the last date
+    // Return oldest date if scrolled past all groups
     return _dateKeys.isNotEmpty ? _dateKeys.last : null;
   }
 
@@ -223,8 +216,9 @@ class _ChatMessageViewState extends State<ChatMessageView>
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
+      // In reversed list: scroll to position 0 to show latest messages
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+        0,
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeOutCubic,
       );
@@ -317,30 +311,50 @@ class _ChatMessageViewState extends State<ChatMessageView>
     return CustomScrollView(
       controller: _scrollController,
       physics: const BouncingScrollPhysics(),
+      reverse: true, // Start from bottom - shows latest messages first
       slivers: [
-        ..._dateKeys.map((dateKey) => _buildDateGroup(dateKey)),
         const SliverToBoxAdapter(
           child: SizedBox(height: 20),
         ),
+        ..._dateKeys.map((dateKey) => _buildDateGroup(dateKey)),
       ],
     );
   }
 
   Widget _buildDateGroup(String dateKey) {
     final messages = _groupedMessages[dateKey]!;
+    final isFirstGroup = _dateKeys.indexOf(dateKey) == 0; // First group = latest messages
 
     return SliverMainAxisGroup(
       slivers: [
-        SliverPersistentHeader(
-          pinned: true,
-          delegate: _DateHeaderDelegate(
-            dateKey: dateKey,
-            height: 40,
-          ),
-        ),
         SliverList(
           delegate: SliverChildBuilderDelegate(
-                (context, index) => _buildMessageItem(messages[index]),
+                (context, index) {
+              final message = messages[index];
+              // For the first group (latest), show inline header after last message
+              if (isFirstGroup && index == messages.length - 1) {
+                return Column(
+                  children: [
+                    _buildMessageItem(message),
+                    const SizedBox(height: 16),
+                    _buildInlineDateHeader(dateKey),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              }
+              // For other groups, show header before first message
+              if (!isFirstGroup && index == 0) {
+                return Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    _buildInlineDateHeader(dateKey),
+                    const SizedBox(height: 16),
+                    _buildMessageItem(message),
+                  ],
+                );
+              }
+              return _buildMessageItem(message);
+            },
             childCount: messages.length,
           ),
         ),
@@ -434,7 +448,7 @@ class _ChatMessageViewState extends State<ChatMessageView>
         if (!_showFloatingHeader) return const SizedBox.shrink();
 
         return Positioned(
-          top: MediaQuery.of(context).padding.top + 6,
+          top: MediaQuery.of(context).padding.top + 10,
           left: 20,
           right: 20,
           child: Transform.translate(
@@ -442,27 +456,6 @@ class _ChatMessageViewState extends State<ChatMessageView>
             child: Opacity(
               opacity: _floatingHeaderAnimation.value,
               child: Container(
-                height: 40,
-                color: Colors.transparent,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      _currentFloatingDate,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              /*child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 8,
@@ -487,7 +480,7 @@ class _ChatMessageViewState extends State<ChatMessageView>
                   ),
                   textAlign: TextAlign.center,
                 ),
-              ),*/
+              ),
             ),
           ),
         );
@@ -521,19 +514,37 @@ class _ChatMessageViewState extends State<ChatMessageView>
     );
   }
 
+  Widget _buildInlineDateHeader(String dateKey) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.7),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Text(
+          dateKey,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
   String _formatTime(DateTime time) {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    _floatingHeaderController.dispose();
-    _scrollToBottomController.dispose();
-    _hideHeaderTimer?.cancel();
-    super.dispose();
   }
 }
 
@@ -551,20 +562,26 @@ class _DateHeaderDelegate extends SliverPersistentHeaderDelegate {
     return Container(
       height: height,
       color: Colors.transparent,
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.grey[300],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            dateKey,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[700],
+      alignment: Alignment.center, // Ensure proper alignment
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.7),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
+          ],
+        ),
+        child: Text(
+          dateKey,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
           ),
         ),
       ),

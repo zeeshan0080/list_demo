@@ -631,6 +631,13 @@ class _CustomList2ViewState extends State<CustomList2View> {
         sender: 'Alice',
       ),
       Message(
+        id: '11',
+        text: 'Hey! How are you doing???',
+        timestamp: twoDaysAgo.add(const Duration(hours: 9, minutes: 40)),
+        isMe: false,
+        sender: 'Alice',
+      ),
+      Message(
         id: '2',
         text: 'I\'m doing great! Just finished a new Flutter project.',
         timestamp: twoDaysAgo.add(const Duration(hours: 9, minutes: 35)),

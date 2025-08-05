@@ -25,9 +25,9 @@ class MessageModel {
 class ChatMessage {
   final String id;
   final String text;
-  final DateTime timeStamp;
+  final DateTime timestamp;
 
-  ChatMessage({required this.id, required this.text, required this.timeStamp});
+  ChatMessage({required this.id, required this.text, required this.timestamp});
 
   factory ChatMessage.fake({
     String id = "1",
@@ -37,7 +37,7 @@ class ChatMessage {
     return ChatMessage(
       id: id,
       text: text,
-      timeStamp: timeStamp ?? DateTime.now(),
+      timestamp: timeStamp ?? DateTime.now(),
     );
   }
 

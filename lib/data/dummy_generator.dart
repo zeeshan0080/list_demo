@@ -33,6 +33,7 @@ class DummyData {
           DateTime.now().subtract(Duration(days: i)),
         ),
       );
+
     }
     return messages;
   }

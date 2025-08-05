@@ -39,14 +39,18 @@ class _ChatMessageViewState extends State<ChatMessageView>
   late Animation<double> _floatingHeaderAnimation;
   late Animation<double> _scrollToBottomAnimation;
 
+  // Grouped messages by date
+  Map<String, List<Message>> _groupedMessages = {};
+  List<String> _dateKeys = [];
+
+  // Map to store actual positions of date headers
+  Map<String, double> _dateHeaderPositions = {};
+  GlobalKey _scrollViewKey = GlobalKey();
+
   Timer? _hideHeaderTimer;
   String _currentFloatingDate = '';
   bool _showScrollToBottom = false;
   bool _showFloatingHeader = false;
-
-  // Grouped messages by date
-  Map<String, List<Message>> _groupedMessages = {};
-  List<String> _dateKeys = [];
 
   @override
   void initState() {
@@ -148,8 +152,8 @@ class _ChatMessageViewState extends State<ChatMessageView>
 
     final scrollOffset = _scrollController.position.pixels;
 
-    // Don't show floating header when overscrolling at top
-    if (scrollOffset <= 0) {
+    // Don't show floating header when at top (latest messages) or overscrolling
+    if (scrollOffset <= 100) {
       if (_showFloatingHeader) {
         _floatingHeaderController.reverse().then((_) {
           if (mounted) {
@@ -162,8 +166,8 @@ class _ChatMessageViewState extends State<ChatMessageView>
       return;
     }
 
-    // Determine current visible date based on scroll position
-    String? currentDate = _getCurrentVisibleDate(scrollOffset);
+    // Determine current visible date based on scroll position in reversed list
+    String? currentDate = _getCurrentVisibleDateReversed(scrollOffset);
 
     if (currentDate != null && currentDate != _currentFloatingDate) {
       setState(() {
@@ -176,33 +180,41 @@ class _ChatMessageViewState extends State<ChatMessageView>
     }
   }
 
-  String? _getCurrentVisibleDate(double scrollOffset) {
-    if (_dateKeys.isEmpty || scrollOffset <= 0) return null;
+  String? _getCurrentVisibleDateReversed(double scrollOffset) {
+    if (_dateKeys.isEmpty) return null;
 
-    // In reversed list: calculate from top (newest dates first)
-    double currentOffset = 0;
+    // Simple threshold-based approach that works reliably
+    // This avoids complex calculations and works with variable message heights
 
-    for (String dateKey in _dateKeys) {
-      final messagesInGroup = _groupedMessages[dateKey]!.length;
-      final headerHeight = 60.0;
-      final messagesHeight = messagesInGroup * 80.0;
-      final groupHeight = headerHeight + messagesHeight;
+    // Don't show header for latest messages (first 200px of scroll)
+    if (scrollOffset < 200) return null;
 
-      if (scrollOffset >= currentOffset && scrollOffset < currentOffset + groupHeight) {
-        return dateKey;
-      }
+    // Progressive thresholds based on typical chat usage patterns
+    final totalGroups = _dateKeys.length;
 
-      currentOffset += groupHeight;
+    if (totalGroups <= 1) return null;
+
+    // Calculate progressive thresholds
+    if (scrollOffset < 500 && totalGroups > 1) {
+      return _dateKeys[1]; // Usually "Yesterday"
     }
 
-    // Return oldest date if scrolled past all groups
-    return _dateKeys.isNotEmpty ? _dateKeys.last : null;
+    if (scrollOffset < 1000 && totalGroups > 2) {
+      return _dateKeys[2]; // Day before yesterday
+    }
+
+    if (scrollOffset < 1500 && totalGroups > 3) {
+      return _dateKeys[3]; // Older date
+    }
+
+    // For very long scrolls, show the oldest available date
+    return _dateKeys.last;
   }
 
   void _resetHideTimer() {
     _hideHeaderTimer?.cancel();
     _hideHeaderTimer = Timer(const Duration(seconds: 2), () {
-      if (mounted) {
+      if (mounted && _showFloatingHeader) {
         _floatingHeaderController.reverse().then((_) {
           if (mounted) {
             setState(() {

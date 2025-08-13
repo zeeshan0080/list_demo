@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'dart:developer';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -32,7 +30,6 @@ class _StickyGroupedViewState extends State<StickyGroupedView> {
 
   double alignment = 0.25;
 
-  final Map<int, MessageModel> renderedIndexToMessage = {};
   final ValueNotifier<bool> showFloatingHeaderNotifier = ValueNotifier(true);
   final ValueNotifier<String> dateHeaderNotifier = ValueNotifier("");
   Timer? _hideHeaderTimer;
@@ -41,7 +38,7 @@ class _StickyGroupedViewState extends State<StickyGroupedView> {
   void initState() {
     final heightGenerator = math.Random(328902348);
     final colorGenerator = math.Random(42490823);
-    messages = DummyData().generateDummyData(count: 20);
+    messages = DummyData().generateDummyData(count: 30);
 
     itemHeights = List<double>.generate(
         messages.length,
@@ -50,7 +47,7 @@ class _StickyGroupedViewState extends State<StickyGroupedView> {
             minItemHeight);
     itemColors = List<Color>.generate(
       messages.length,
-      (int _) => Color(colorGenerator.nextInt(randomMax)).withOpacity(1),
+      (int _) => Color(colorGenerator.nextInt(randomMax)).withValues(alpha: 1),
     );
     super.initState();
   }
@@ -91,18 +88,18 @@ class _StickyGroupedViewState extends State<StickyGroupedView> {
       final key = _formatDate(message.timeStampMillis);
       grouped.putIfAbsent(key, () => []).add(message);
     }
-    print("***********, last: $last");
+    // print("***********, last: $last");
     int index = last;
     grouped.forEach((k, v){
       if(index < -1){
         return;
       }
       index--;
-      print("-- group: $k, index:$index");
+      // print("-- group: $k, index:$index");
       for(var item in v){
-        print("\t\titem: ${_formatDate(item.timeStampMillis)}, index: $index");
+        // print("\t\titem: ${_formatDate(item.timeStampMillis)}, index: $index");
         if(index <= 0){
-          print("Header date: ${_formatDate(item.timeStampMillis)}");
+          // print("Header date: ${_formatDate(item.timeStampMillis)}");
           Future.microtask(()=> dateHeaderNotifier.value = _formatDate(item.timeStampMillis));
         }
         index--;
@@ -143,13 +140,12 @@ class _StickyGroupedViewState extends State<StickyGroupedView> {
                     );
                   },
                   indexedItemBuilder: (_, details, index){
-                    renderedIndexToMessage[index] = details;
                     return Container(
                       height: itemHeights[index],
                       color: itemColors[index],
                       child: Center(
                         child: Text(
-                          "Index: $index, ${details.message}",
+                          "Index: $index, Id: ${details.id}, ${details.message}",
                           style: TextStyle(
                               color: Colors.white
                           ),
@@ -243,9 +239,6 @@ class _StickyGroupedViewState extends State<StickyGroupedView> {
     builder: (context, positions, child) {
       _onScroll();
 
-      int? topMessageIndex;
-      MessageModel? topMessage;
-
       int? min;
       int? max;
       if (positions.isEmpty) {
@@ -273,34 +266,6 @@ class _StickyGroupedViewState extends State<StickyGroupedView> {
           : max)
           .index;
 
-      ///date header
-      if(false){
-        // Find the smallest visible index
-        final visibleIndexes = positions
-            .where((p) => p.itemTrailingEdge > 0 && p.itemLeadingEdge < 1)
-            .map((p) => p.index)
-            .toList()
-          ..sort();
-        // Find the first visible *message* (skip headers if needed)
-        MessageModel? firstVisibleMessage;
-        for (final index in visibleIndexes) {
-          final msg = renderedIndexToMessage[index];
-          if (msg != null) { // skip nulls = group headers
-            firstVisibleMessage = msg;
-            break;
-          }
-        }
-
-        if (firstVisibleMessage != null) {
-          final visibleDate = DateTime.fromMillisecondsSinceEpoch(
-            firstVisibleMessage.timeStampMillis,
-          );
-          //print("Floating header date: $visibleDate");
-          // TODO: Update header state here
-          Future.microtask(()=> dateHeaderNotifier.value = _formatDate(visibleDate.millisecondsSinceEpoch));
-        }
-      }
-
       /*log("=============");
       for(var item in positions){
         log("${item.toString()}");
@@ -310,8 +275,8 @@ class _StickyGroupedViewState extends State<StickyGroupedView> {
       _updateFloatingHeaderDate(max);
       return Row(
         children: <Widget>[
-          Expanded(child: Text('First Item: ${min ?? ''}')),
-          Expanded(child: Text('Last Item: ${max ?? ''}')),
+          Expanded(child: Text('First Item: $min')),
+          Expanded(child: Text('Last Item: $max')),
         ],
       );
     },
@@ -321,18 +286,18 @@ class _StickyGroupedViewState extends State<StickyGroupedView> {
     children: <Widget>[
       const Text('scroll to'),
       scrollItemButton(0),
-      scrollItemButton(1),
-      scrollItemButton(7),
-      scrollItemButton(40),
-      scrollItemButton(70),
+      scrollItemButton(5),
+      scrollItemButton(10),
+      scrollItemButton(15),
+      scrollItemButton(18),
     ],
   );
 
   Widget scrollItemButton(int value) => TextButton(
     key: ValueKey<String>('Scroll$value'),
-    onPressed: () => scrollTo(value),
+    onPressed: () => scrollToElement(value),
+    style: _scrollButtonStyle(horizontalPadding: 20),
     child: Text('$value'),
-    style: _scrollButtonStyle(horizonalPadding: 20),
   );
 
   void scrollTo(int index) => itemScrollController.scrollTo(
@@ -342,12 +307,19 @@ class _StickyGroupedViewState extends State<StickyGroupedView> {
       automaticAlignment: false,
       alignment: alignment);
 
-  ButtonStyle _scrollButtonStyle({required double horizonalPadding}) =>
+  void scrollToElement(int id) => itemScrollController.scrollToElement(
+      identifier: id,
+      duration: scrollDuration,
+      curve: Curves.easeInOutCubic,
+      automaticAlignment: false,
+      alignment: alignment);
+
+  ButtonStyle _scrollButtonStyle({required double horizontalPadding}) =>
       ButtonStyle(
-        padding: MaterialStateProperty.all(
-          EdgeInsets.symmetric(horizontal: horizonalPadding, vertical: 0),
+        padding: WidgetStateProperty.all(
+          EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 0),
         ),
-        minimumSize: MaterialStateProperty.all(Size.zero),
+        minimumSize: WidgetStateProperty.all(Size.zero),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       );
 

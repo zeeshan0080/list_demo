@@ -11,7 +11,8 @@ class DummyData {
     for (int i = 0; i < count; i++) {
       messages.add(
         MessageModel.fake(
-          id: idGenerator.nextInt(randomMax),
+          // id: idGenerator.nextInt(randomMax),
+          id: i,
           message: "Test message $i",
           timeStampMillis:
               DateTime.now().subtract(Duration(days: i)).millisecondsSinceEpoch,

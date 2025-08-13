@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
@@ -112,94 +113,118 @@ class _StickyGroupedViewState extends State<StickyGroupedView> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        leading: Icon(Icons.arrow_back_ios_new, color: Colors.black),
         title: Text(
           "Scrollable Positioned List",
           style: TextStyle(fontSize: 18),
         ),
       ),
-      body: Stack(
+      body: Column(
         children: [
-          Column(
-            children: [
-              Expanded(
-                child: StickyGroupedListView<MessageModel, DateTime>(
-                  itemScrollController: itemScrollController,
-                  itemPositionsListener: itemPositionsListener,
-                  elements: messages,
-                  groupBy: (MessageModel element) {
-                    DateTime date = DateTime.fromMillisecondsSinceEpoch(
-                      element.timeStampMillis,
-                    );
-                    return DateTime(date.year, date.month, date.day);
-                  },
-                  groupSeparatorBuilder: (MessageModel details) {
-                    //return SizedBox.shrink();
-                    return Text(
-                      _formatDate(details.timeStampMillis),
-                      textAlign: TextAlign.center,
-                    );
-                  },
-                  indexedItemBuilder: (_, details, index){
-                    return Container(
-                      height: itemHeights[index],
-                      color: itemColors[index],
-                      child: Center(
-                        child: Text(
-                          "Index: $index, Id: ${details.id}, ${details.message}",
-                          style: TextStyle(
-                              color: Colors.white
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                  itemComparator: (m1, m2) => m1.timeStampMillis.compareTo(m2.timeStampMillis),
-                  elementIdentifier: (element) => element.id,
-                  order: StickyGroupedListOrder.DESC,
-                  reverse: true,
-                  floatingHeader: false,
+          ///user details
+          Container(
+            height: 70,
+            color: Colors.pinkAccent,
+            child: Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: CircleAvatar(
+                    radius: 20,
+                  ),
                 ),
-              ),
-              positionsView,
-              scrollControlButtons,
-              alignmentControl,
-              //SafeArea(child: SizedBox(height: 0)),
-            ],
+                Text(
+                    "John Doe"
+                )
+              ],
+            ),
           ),
-          if(true)
-          ValueListenableBuilder<bool>(
-              valueListenable: showFloatingHeaderNotifier,
-              builder: (context, showFloatingHeader2, _) {
-                if(showFloatingHeader2){
-                  return ValueListenableBuilder<String>(
-                      valueListenable: dateHeaderNotifier,
-                      builder: (context, floatingDate, _) {
-                      return Align(
-                        alignment: Alignment.topCenter,
-                        child: Container(
-                          height: 20,
-                          color: Colors.red,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                floatingDate,
+          Expanded(
+            child: Stack(
+              children: [
+                Column(
+                  children: [
+                    Expanded(
+                      child: StickyGroupedListView<MessageModel, DateTime>(
+                        itemScrollController: itemScrollController,
+                        itemPositionsListener: itemPositionsListener,
+                        elements: messages,
+                        groupBy: (MessageModel element) {
+                          DateTime date = DateTime.fromMillisecondsSinceEpoch(
+                            element.timeStampMillis,
+                          );
+                          return DateTime(date.year, date.month, date.day);
+                        },
+                        groupSeparatorBuilder: (MessageModel details) {
+                          //return SizedBox.shrink();
+                          return Text(
+                            _formatDate(details.timeStampMillis),
+                            textAlign: TextAlign.center,
+                          );
+                        },
+                        indexedItemBuilder: (_, details, index){
+                          return Container(
+                            height: itemHeights[index],
+                            color: itemColors[index],
+                            child: Center(
+                              child: Text(
+                                "Index: $index, Id: ${details.id}, ${details.message}",
                                 style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14
+                                    color: Colors.white
                                 ),
-                              )
-                            ],
-                          ),
-                        ),
-                      );
+                              ),
+                            ),
+                          );
+                        },
+                        itemComparator: (m1, m2) => m1.timeStampMillis.compareTo(m2.timeStampMillis),
+                        elementIdentifier: (element) => element.id,
+                        order: StickyGroupedListOrder.DESC,
+                        reverse: true,
+                        floatingHeader: false,
+                      ),
+                    ),
+                    positionsView,
+                    scrollControlButtons,
+                    alignmentControl,
+                    //SafeArea(child: SizedBox(height: 0)),
+                  ],
+                ),
+                ValueListenableBuilder<bool>(
+                    valueListenable: showFloatingHeaderNotifier,
+                    builder: (context, showFloatingHeader2, _) {
+                      if(showFloatingHeader2){
+                        return ValueListenableBuilder<String>(
+                            valueListenable: dateHeaderNotifier,
+                            builder: (context, floatingDate, _) {
+                              return Align(
+                                alignment: Alignment.topCenter,
+                                child: Container(
+                                  height: 20,
+                                  color: Colors.red,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        floatingDate,
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14
+                                        ),
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+                        );
+                      }else{
+                        return SizedBox.shrink();
+                      }
                     }
-                  );
-                }else{
-                  return SizedBox.shrink();
-                }
-            }
-          )
+                )
+              ],
+            ),
+          ),
         ],
       ),
       floatingActionButton: scrollToBottomView,

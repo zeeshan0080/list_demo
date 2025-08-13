@@ -17,6 +17,14 @@ class DummyData {
               DateTime.now().subtract(Duration(days: i)).millisecondsSinceEpoch,
         ),
       );
+      /*messages.add(
+        MessageModel.fake(
+          id: idGenerator.nextInt(randomMax),
+          message: "Test message $i",
+          timeStampMillis:
+          DateTime.now().subtract(Duration(days: i, hours: 5)).millisecondsSinceEpoch,
+        ),
+      );*/
     }
     return messages;
   }

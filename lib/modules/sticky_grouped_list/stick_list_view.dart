@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import 'package:list_demo/data/models/message_model.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -31,7 +32,7 @@ class _StickyGroupedViewState extends State<StickyGroupedView> {
 
   double alignment = 0.25;
 
-  final ValueNotifier<bool> showFloatingHeaderNotifier = ValueNotifier(true);
+  final ValueNotifier<bool> showFloatingHeaderNotifier = ValueNotifier(false);
   final ValueNotifier<String> dateHeaderNotifier = ValueNotifier("");
   Timer? _hideHeaderTimer;
 
@@ -83,6 +84,25 @@ class _StickyGroupedViewState extends State<StickyGroupedView> {
     return DateFormat('MMM dd, yyyy').format(date);
   }
 
+  void _scrollListener(){
+    // printLog("@@: _scrollListener");
+    final positions = itemPositionsListener.itemPositions.value;
+    int? max;
+    if (positions.isEmpty) {
+      return;
+    }
+    _onScroll();
+    max = positions
+        .where((ItemPosition position) => position.itemLeadingEdge < 0.97)
+        .reduce((ItemPosition max, ItemPosition position) =>
+    position.itemLeadingEdge > max.itemLeadingEdge
+        ? position
+        : max)
+        .index;
+
+    _updateFloatingHeaderDate(max);
+  }
+
   void _updateFloatingHeaderDate(int last) {
     final Map<String, List<MessageModel>> grouped = {};
     for (final message in messages.reversed) {
@@ -122,7 +142,8 @@ class _StickyGroupedViewState extends State<StickyGroupedView> {
       body: Column(
         children: [
           ///user details
-          Container(
+          if(false)
+            Container(
             height: 70,
             color: Colors.pinkAccent,
             child: Row(
@@ -145,45 +166,55 @@ class _StickyGroupedViewState extends State<StickyGroupedView> {
                 Column(
                   children: [
                     Expanded(
-                      child: StickyGroupedListView<MessageModel, DateTime>(
-                        itemScrollController: itemScrollController,
-                        itemPositionsListener: itemPositionsListener,
-                        elements: messages,
-                        groupBy: (MessageModel element) {
-                          DateTime date = DateTime.fromMillisecondsSinceEpoch(
-                            element.timeStampMillis,
-                          );
-                          return DateTime(date.year, date.month, date.day);
+                      child: NotificationListener<UserScrollNotification>(
+                        onNotification: (notification) {
+                          if (notification.direction != ScrollDirection.idle) {
+                            _scrollListener();
+                          }
+                          return false;
                         },
-                        groupSeparatorBuilder: (MessageModel details) {
-                          //return SizedBox.shrink();
-                          return Text(
-                            _formatDate(details.timeStampMillis),
-                            textAlign: TextAlign.center,
-                          );
-                        },
-                        indexedItemBuilder: (_, details, index){
-                          return Container(
-                            height: itemHeights[index],
-                            color: itemColors[index],
-                            child: Center(
-                              child: Text(
-                                "Index: $index, Id: ${details.id}, ${details.message}",
-                                style: TextStyle(
-                                    color: Colors.white
+                        child: StickyGroupedListView<MessageModel, DateTime>(
+                          itemScrollController: itemScrollController,
+                          itemPositionsListener: itemPositionsListener,
+                          elements: messages,
+
+                          groupBy: (MessageModel element) {
+                            DateTime date = DateTime.fromMillisecondsSinceEpoch(
+                              element.timeStampMillis,
+                            );
+                            return DateTime(date.year, date.month, date.day);
+                          },
+                          groupSeparatorBuilder: (MessageModel details) {
+                            //return SizedBox.shrink();
+                            return Text(
+                              _formatDate(details.timeStampMillis),
+                              textAlign: TextAlign.center,
+                            );
+                          },
+                          indexedItemBuilder: (_, details, index){
+                            return Container(
+                              height: itemHeights[index],
+                              color: itemColors[index],
+                              child: Center(
+                                child: Text(
+                                  "Index: $index, Id: ${details.id}, ${details.message}",
+                                  style: TextStyle(
+                                      color: Colors.white
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
-                        itemComparator: (m1, m2) => m1.timeStampMillis.compareTo(m2.timeStampMillis),
-                        elementIdentifier: (element) => element.id,
-                        order: StickyGroupedListOrder.DESC,
-                        reverse: true,
-                        floatingHeader: false,
+                            );
+                          },
+                          itemComparator: (m1, m2) => m1.timeStampMillis.compareTo(m2.timeStampMillis),
+                          elementIdentifier: (element) => element.id,
+                          order: StickyGroupedListOrder.DESC,
+                          reverse: true,
+                          floatingHeader: false,
+                          showStickyHeader: false,
+                        ),
                       ),
                     ),
-                    positionsView,
+                    // positionsView,
                     scrollControlButtons,
                     alignmentControl,
                     //SafeArea(child: SizedBox(height: 0)),

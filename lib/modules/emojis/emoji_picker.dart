@@ -13,6 +13,7 @@ class _EmojiPickerViewState extends State<EmojiPickerView> {
   final _emojiController = TextEditingController();
 
   List<String> _selected = [];
+  String? _activeEmoji;
 
   @override
   void initState() {
@@ -90,11 +91,15 @@ class _EmojiPickerViewState extends State<EmojiPickerView> {
             onPressed: () async {
               final result = await showFull();
               if(result != null){
+                setState(() {
+                  _activeEmoji = result.toString();
+                });
                 print("Result: ${result.toString()}");
               }
             },
-            child: Text("Show"),
-          )
+            child: Text("Show: ${_activeEmoji}"),
+          ),
+
         ],
       ),
     );

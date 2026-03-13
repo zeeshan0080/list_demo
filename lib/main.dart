@@ -22,11 +22,11 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       // home: const ScrollablePositionedListView(),
-      // home: const StickyGroupedView(),
+      home: const StickyGroupedView(),
       // home: const GroupedListViewView(),
       // home: const CustomListView(),
       // home: CustomList2View(),
-      home: EmojiPickerView(),
+      // home: EmojiPickerView(),
     );
   }
 }
